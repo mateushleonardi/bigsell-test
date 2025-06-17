@@ -4,15 +4,25 @@ const DataContext = createContext();
 
 export function DataProvider({ children }) {
   const [items, setItems] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchItems = useCallback(async () => {
-    const res = await fetch('http://localhost:3001/api/items?limit=500'); // Intentional bug: backend ignores limit
+const fetchItems = useCallback(async (signal, page = 1) => {
+  try {
+    const res = await fetch(`/api/items?page=${page}&limit=2`, { signal });
+    if (!res.ok) throw new Error('Internal Server Error');
     const json = await res.json();
-    setItems(json);
-  }, []);
+    setItems(json.results || []);
+    setTotalPages(json.totalPages || 1); // novo
+  } catch (err) {
+    console.error('Error fetching items:', err);
+    setItems([]);
+  }
+}, []);
+
+
 
   return (
-    <DataContext.Provider value={{ items, fetchItems }}>
+    <DataContext.Provider value={{ items,totalPages,fetchItems }}>
       {children}
     </DataContext.Provider>
   );
